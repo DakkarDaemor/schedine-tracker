@@ -271,7 +271,7 @@
     // accepts d/m/yyyy, dd/mm/yyyy, with / - or . as separator, or yyyy-mm-dd
     s = s.trim();
     var m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
-    if(m) return m[3]+"-"+pad(parseInt(m[1],10))+"-"+pad(parseInt(m[2],10));
+    if(m) return m[3]+"-"+pad(parseInt(m[2],10))+"-"+pad(parseInt(m[1],10));
     var m2 = s.match(/^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})$/);
     if(m2) return m2[1]+"-"+pad(parseInt(m2[2],10))+"-"+pad(parseInt(m2[3],10));
     return null;

@@ -1,6 +1,6 @@
 // Service worker minimale: cache-first per l'uso offline.
 // Da aggiornare (CACHE_NAME) ad ogni release per invalidare la cache vecchia.
-var CACHE_NAME = "schedine-cache-v3";
+var CACHE_NAME = "schedine-cache-v4";
 var ASSETS = [
   "./",
   "./index.html",
