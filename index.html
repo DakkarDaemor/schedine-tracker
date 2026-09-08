@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Schedine Tracker</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#123524">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Schedine">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png" type="image/png">
+<style>
+  :root{
+    --felt:#123524;
+    --felt-dark:#0c2519;
+    --paper:#F6F1E4;
+    --paper-dim:#ece4d0;
+    --ink:#20241f;
+    --ink-soft:#5b5748;
+    --gold:#C9A227;
+    --gold-dim:#a5841e;
+    --pos:#2F7A4D;
+    --neg:#B23A32;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;background:var(--felt);color:var(--paper);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    height:100%;}
+  body{
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(255,255,255,0.03), transparent 40%),
+      radial-gradient(circle at 80% 90%, rgba(255,255,255,0.03), transparent 40%);
+  }
+  .app{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;position:relative;}
+
+  header.top{
+    padding:18px 16px 14px;
+    border-bottom:1px solid rgba(201,162,39,0.3);
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  header.top h1{
+    font-size:15px;letter-spacing:3px;text-transform:uppercase;
+    font-weight:800;margin:0;color:var(--gold);
+    font-stretch:condensed;
+  }
+  header.top .sub{font-size:10px;color:rgba(246,241,228,0.5);letter-spacing:1px;margin-top:2px;}
+  .iconbtn{
+    background:none;border:1px solid rgba(201,162,39,0.4);color:var(--gold);
+    border-radius:8px;width:34px;height:34px;font-size:16px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .iconbtn:active{background:rgba(201,162,39,0.15);}
+
+  main{flex:1;padding:16px 16px 90px;overflow-y:auto;}
+  .hidden{display:none !important;}
+
+  /* --- ticket card --- */
+  .card{
+    background:var(--paper);color:var(--ink);border-radius:var(--radius);
+    padding:16px;margin-bottom:14px;box-shadow:0 4px 14px rgba(0,0,0,0.25);
+  }
+  .card h2{margin:0 0 12px;font-size:12px;letter-spacing:2px;text-transform:uppercase;
+    color:var(--ink-soft);font-weight:700;}
+
+  label{display:block;font-size:11px;letter-spacing:1px;text-transform:uppercase;
+    color:var(--ink-soft);margin-bottom:5px;margin-top:12px;font-weight:700;}
+  label:first-of-type{margin-top:0;}
+  input[type=date],input[type=number],input[type=text],select{
+    width:100%;padding:10px 12px;border-radius:7px;border:1px solid #d8d0ba;
+    background:#fff;color:var(--ink);font-size:16px;font-family:inherit;
+    appearance:none;-webkit-appearance:none;
+  }
+  select{
+    background-image:linear-gradient(45deg,transparent 50%,var(--ink-soft) 50%),linear-gradient(135deg,var(--ink-soft) 50%,transparent 50%);
+    background-position:calc(100% - 18px) calc(50% - 3px),calc(100% - 13px) calc(50% - 3px);
+    background-size:5px 5px,5px 5px;background-repeat:no-repeat;
+  }
+  .badge{
+    display:inline-block;font-size:9px;letter-spacing:0.5px;text-transform:uppercase;
+    font-weight:800;padding:2px 6px;border-radius:4px;margin-top:3px;
+  }
+  input:focus{outline:2px solid var(--gold-dim);outline-offset:1px;}
+
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:6px;
+    background:var(--gold);color:var(--felt-dark);border:none;border-radius:8px;
+    padding:12px 16px;font-size:14px;font-weight:800;letter-spacing:0.5px;
+    cursor:pointer;width:100%;margin-top:16px;text-transform:uppercase;
+  }
+  .btn:active{transform:scale(0.98);}
+  .btn.secondary{background:transparent;color:var(--paper);border:1px solid rgba(246,241,228,0.4);}
+  .card .btn.secondary, .modalBox .btn.secondary{color:var(--ink);border:1px solid #c9c0a4;background:var(--paper-dim);}
+  .btn.small{width:auto;padding:8px 12px;font-size:11px;margin-top:0;}
+  .btn.danger{background:var(--neg);color:#fff;}
+
+  .stamp{animation:stampPop .35s ease;}
+  @keyframes stampPop{
+    0%{transform:scale(1);}
+    30%{transform:scale(1.03) rotate(-0.5deg);}
+    100%{transform:scale(1);}
+  }
+
+  /* --- ticket stub row (history) --- */
+  .ticket{
+    background:var(--paper);border-radius:var(--radius);margin-bottom:10px;
+    display:flex;box-shadow:0 3px 10px rgba(0,0,0,0.2);overflow:hidden;
+  }
+  .ticket .stub{
+    width:70px;flex-shrink:0;background:var(--felt-dark);color:var(--paper);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    padding:8px 4px;position:relative;
+  }
+  .ticket .stub .d{font-size:18px;font-weight:800;line-height:1;}
+  .ticket .stub .m{font-size:9px;letter-spacing:1px;text-transform:uppercase;opacity:0.7;margin-top:2px;}
+  .perf{
+    width:0;border-left:2px dashed #d8d0ba;position:relative;
+  }
+  .perf::before,.perf::after{
+    content:"";position:absolute;width:10px;height:10px;background:var(--felt);
+    border-radius:50%;left:-6px;
+  }
+  .perf::before{top:-5px;}
+  .perf::after{bottom:-5px;}
+  .ticket .body{flex:1;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;color:var(--ink);}
+  .ticket .points{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:20px;font-weight:800;}
+  .ticket .points.pos{color:var(--pos);}
+  .ticket .points.neg{color:var(--neg);}
+  .ticket .note{font-size:11px;color:var(--ink-soft);margin-top:2px;max-width:150px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .ticket .del{background:none;border:none;color:#b5ab8c;font-size:18px;cursor:pointer;padding:4px 6px;}
+
+  .empty{text-align:center;padding:40px 20px;color:rgba(246,241,228,0.5);font-size:13px;}
+
+  /* --- stats --- */
+  .statgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+  .stattile{background:var(--paper);border-radius:var(--radius);padding:12px;color:var(--ink);}
+  .stattile .label{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--ink-soft);font-weight:700;}
+  .stattile .value{font-size:22px;font-weight:800;margin-top:4px;font-family:ui-monospace,monospace;}
+  .stattile .delta{font-size:11px;margin-top:3px;font-weight:700;}
+  .delta.up{color:var(--pos);}
+  .delta.down{color:var(--neg);}
+  .delta.flat{color:var(--ink-soft);}
+
+  .toggle{display:flex;background:rgba(246,241,228,0.1);border-radius:8px;padding:3px;margin-bottom:14px;}
+  .toggle button{flex:1;background:none;border:none;color:rgba(246,241,228,0.6);
+    padding:8px;border-radius:6px;font-size:12px;font-weight:700;letter-spacing:1px;
+    text-transform:uppercase;cursor:pointer;}
+  .toggle button.active{background:var(--gold);color:var(--felt-dark);}
+
+  .chartwrap{background:var(--paper);border-radius:var(--radius);padding:14px 10px;color:var(--ink);margin-bottom:14px;}
+  .chartwrap svg{width:100%;display:block;}
+  .bartext{font-family:ui-monospace,monospace;}
+
+  table.periods{width:100%;border-collapse:collapse;font-size:12px;}
+  table.periods th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:1px;
+    color:var(--ink-soft);padding-bottom:6px;border-bottom:1px solid #e3dcc6;}
+  table.periods td{padding:7px 0;border-bottom:1px solid #efe9d8;font-family:ui-monospace,monospace;}
+  table.periods tr:last-child td{border-bottom:none;}
+
+  /* --- tab bar --- */
+  nav.tabs{
+    position:fixed;bottom:0;left:0;right:0;
+    background:var(--felt-dark);border-top:1px solid rgba(201,162,39,0.3);
+    display:flex;max-width:480px;margin:0 auto;
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  nav.tabs button{
+    flex:1;background:none;border:none;color:rgba(246,241,228,0.5);
+    padding:12px 4px 10px;font-size:10px;letter-spacing:1px;text-transform:uppercase;
+    font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;
+  }
+  nav.tabs button .ic{font-size:18px;}
+  nav.tabs button.active{color:var(--gold);}
+
+  .toast{
+    position:fixed;bottom:78px;left:50%;transform:translateX(-50%);
+    background:var(--gold);color:var(--felt-dark);padding:10px 18px;border-radius:20px;
+    font-size:13px;font-weight:700;box-shadow:0 4px 14px rgba(0,0,0,0.3);
+    opacity:0;pointer-events:none;transition:opacity .25s, transform .25s;z-index:50;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(-6px);}
+
+  input[type=file]{display:none;}
+  .rowbtns{display:flex;gap:8px;margin-top:14px;}
+  .rowbtns .btn{margin-top:0;}
+  .hint{font-size:11px;color:rgba(246,241,228,0.45);margin-top:8px;line-height:1.5;}
+
+  .modalOverlay{
+    position:fixed;inset:0;background:rgba(0,0,0,0.55);
+    display:flex;align-items:center;justify-content:center;z-index:100;
+    padding:24px;
+  }
+  .modalBox{
+    background:var(--paper);color:var(--ink);border-radius:var(--radius);
+    padding:20px;max-width:340px;width:100%;box-shadow:0 8px 30px rgba(0,0,0,0.4);
+  }
+  .modalMsg{font-size:14px;line-height:1.5;margin-bottom:16px;}
+  .modalBtns{display:flex;gap:10px;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="top">
+    <div>
+      <h1>Schedine Tracker</h1>
+      <div class="sub" id="headerSub">0 registrate</div>
+    </div>
+    <button class="iconbtn" id="menuBtn" title="Dati">⋮</button>
+  </header>
+
+  <main>
+
+    <!-- TAB: AGGIUNGI -->
+    <section id="tab-add">
+      <div class="card" id="addCard">
+        <h2>Nuova schedina</h2>
+        <label for="inDate">Data</label>
+        <input type="date" id="inDate">
+        <label for="inCategory">Categoria</label>
+        <select id="inCategory">
+          <option value="Schedina" selected style="background:#C9A227;color:#20241f;">Schedina</option>
+          <option value="PR Check" style="background:#3B7A8C;color:#fff;">PR Check</option>
+          <option value="Meeting" style="background:#7A5C9E;color:#fff;">Meeting</option>
+          <option value="Rebase" style="background:#C97A2A;color:#20241f;">Rebase</option>
+          <option value="Rework" style="background:#B23A32;color:#fff;">Rework</option>
+        </select>
+        <label for="inPoints">Punti</label>
+        <select id="inPoints">
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3" selected>3</option>
+          <option value="5">5</option>
+          <option value="8">8</option>
+          <option value="13">13</option>
+          <option value="21">21</option>
+          <option value="34">34</option>
+          <option value="55">55</option>
+        </select>
+        <label for="inNote">Nota (opzionale)</label>
+        <input type="text" id="inNote" placeholder="es. schedina Champions">
+        <button class="btn" id="addBtn">Registra schedina</button>
+      </div>
+
+      <div class="card" id="importExportCard">
+        <h2>Dati (CSV / Excel)</h2>
+        <div class="rowbtns">
+          <button class="btn secondary small" id="exportBtn" style="flex:1">Esporta CSV</button>
+          <button class="btn secondary small" id="importBtn" style="flex:1">Importa CSV</button>
+        </div>
+        <input type="file" id="importFile" accept=".csv,text/csv">
+        <div class="hint">Il CSV usa il punto e virgola (;) e la virgola decimale, compatibile con Excel in italiano. L'import aggiunge le righe a quelle esistenti.</div>
+      </div>
+    </section>
+
+    <!-- TAB: STORICO -->
+    <section id="tab-history" class="hidden">
+      <div id="historyList"></div>
+      <div class="empty hidden" id="historyEmpty">Nessuna schedina registrata.<br>Aggiungine una dalla tab "Aggiungi".</div>
+    </section>
+
+    <!-- TAB: STATISTICHE -->
+    <section id="tab-stats" class="hidden">
+      <div class="statgrid" id="overviewGrid"></div>
+      <div class="toggle">
+        <button id="toggleWeek" class="active">Settimanale</button>
+        <button id="toggleMonth">Mensile</button>
+      </div>
+      <div class="chartwrap">
+        <svg id="chart" viewBox="0 0 320 160" preserveAspectRatio="xMidYMid meet"></svg>
+      </div>
+      <div class="card">
+        <h2 id="periodsTitle">Ultime settimane</h2>
+        <table class="periods" id="periodsTable"></table>
+      </div>
+    </section>
+
+  </main>
+
+  <nav class="tabs">
+    <button class="tabbtn active" data-tab="add"><span class="ic">＋</span>Aggiungi</button>
+    <button class="tabbtn" data-tab="history"><span class="ic">☰</span>Storico</button>
+    <button class="tabbtn" data-tab="stats"><span class="ic">▤</span>Statistiche</button>
+  </nav>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="modalOverlay hidden" id="modalOverlay">
+    <div class="modalBox">
+      <div class="modalMsg" id="modalMsg"></div>
+      <div class="modalBtns">
+        <button class="btn secondary small" id="modalCancel" style="flex:1">Annulla</button>
+        <button class="btn danger small" id="modalOk" style="flex:1">Conferma</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var STORAGE_KEY = "schedine_entries_v1";
+  var entries = [];
+
+  // ---------- storage ----------
+  function load(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      entries = raw ? JSON.parse(raw) : [];
+    }catch(e){ entries = []; }
+    // migrazione: le schedine salvate prima dell'introduzione della categoria
+    // vengono uniformate al default "Schedina"
+    var migrated = false;
+    entries.forEach(function(e){
+      if(!e.category){ e.category = "Schedina"; migrated = true; }
+    });
+    if(migrated) save();
+  }
+  function save(){
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+    }catch(e){
+      showToast("Errore nel salvataggio dati");
+    }
+  }
+
+  // ---------- utils ----------
+  function todayStr(){
+    var d = new Date();
+    return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+  }
+  function pad(n){ return n<10 ? "0"+n : ""+n; }
+  function fmtDateIt(iso){
+    var p = iso.split("-");
+    return p[2]+"/"+p[1]+"/"+p[0];
+  }
+  function fmtPoints(n){
+    var s = (Math.round(n*100)/100).toString();
+    return s;
+  }
+  function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+
+  function getISOWeek(dateObj){
+    var d = new Date(Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()));
+    var dayNum = (d.getUTCDay() + 6) % 7; // Monday=0
+    d.setUTCDate(d.getUTCDate() - dayNum + 3);
+    var firstThursday = new Date(Date.UTC(d.getUTCFullYear(),0,4));
+    var week = 1 + Math.round(((d - firstThursday) / 86400000 - 3 + ((firstThursday.getUTCDay()+6)%7)) / 7);
+    return { year: d.getUTCFullYear(), week: week };
+  }
+
+  var MONTHS_IT = ["Gen","Feb","Mar","Apr","Mag","Giu","Lug","Ago","Set","Ott","Nov","Dic"];
+
+  var CATEGORY_STYLES = {
+    "Schedina": {bg:"#C9A227", fg:"#20241f"},
+    "PR Check": {bg:"#3B7A8C", fg:"#ffffff"},
+    "Meeting":  {bg:"#7A5C9E", fg:"#ffffff"},
+    "Rebase":   {bg:"#C97A2A", fg:"#20241f"},
+    "Rework":   {bg:"#B23A32", fg:"#ffffff"}
+  };
+  function categoryStyle(cat){
+    return CATEGORY_STYLES[cat] || {bg:"#8a8574", fg:"#ffffff"}; // fallback per categorie custom da CSV
+  }
+
+  function weekKey(iso){
+    var d = new Date(iso+"T00:00:00");
+    var w = getISOWeek(d);
+    return w.year+"-W"+pad(w.week);
+  }
+  function monthKey(iso){
+    return iso.slice(0,7); // YYYY-MM
+  }
+  function weekLabel(key){
+    var parts = key.split("-W");
+    return "Sett. "+parseInt(parts[1],10)+" · "+parts[0];
+  }
+  function monthLabel(key){
+    var parts = key.split("-");
+    return MONTHS_IT[parseInt(parts[1],10)-1]+" "+parts[0];
+  }
+
+  // ---------- grouping ----------
+  function groupBy(keyFn, labelFn){
+    var map = {};
+    entries.forEach(function(e){
+      var k = keyFn(e.date);
+      if(!map[k]) map[k] = { key:k, label:labelFn(k), count:0, points:0 };
+      map[k].count += 1;
+      map[k].points += e.points;
+    });
+    var arr = Object.keys(map).map(function(k){ return map[k]; });
+    arr.sort(function(a,b){ return a.key < b.key ? -1 : a.key > b.key ? 1 : 0; });
+    return arr;
+  }
+
+  // ---------- rendering: header ----------
+  function renderHeader(){
+    document.getElementById("headerSub").textContent =
+      entries.length + (entries.length===1 ? " registrata" : " registrate");
+  }
+
+  // ---------- rendering: history ----------
+  function renderHistory(){
+    var list = document.getElementById("historyList");
+    var empty = document.getElementById("historyEmpty");
+    var sorted = entries.slice().sort(function(a,b){
+      if(a.date !== b.date) return a.date < b.date ? 1 : -1;
+      return b.id < a.id ? -1 : 1;
+    });
+    if(sorted.length===0){
+      list.innerHTML = "";
+      empty.classList.remove("hidden");
+      return;
+    }
+    empty.classList.add("hidden");
+    list.innerHTML = sorted.map(function(e){
+      var d = new Date(e.date+"T00:00:00");
+      var cls = e.points > 0 ? "pos" : (e.points < 0 ? "neg" : "");
+      return '<div class="ticket" data-id="'+e.id+'">'+
+        '<div class="stub"><div class="d">'+pad(d.getDate())+'</div><div class="m">'+MONTHS_IT[d.getMonth()]+'</div></div>'+
+        '<div class="perf"></div>'+
+        '<div class="body">'+
+          '<div><div class="points '+cls+'">'+fmtPoints(e.points)+'</div>'+
+          (e.category ? '<div class="badge" style="background:'+categoryStyle(e.category).bg+';color:'+categoryStyle(e.category).fg+'">'+escapeHtml(e.category)+'</div>' : '')+
+          (e.note ? '<div class="note">'+escapeHtml(e.note)+'</div>' : '')+
+          '</div>'+
+          '<button class="del" data-del="'+e.id+'">✕</button>'+
+        '</div>'+
+      '</div>';
+    }).join("");
+  }
+  function escapeHtml(s){
+    return s.replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+
+  // ---------- rendering: stats ----------
+  var statsMode = "week"; // or "month"
+
+  function periodBounds(mode, offset){
+    // returns {key, label} for current period minus offset periods
+    var now = new Date();
+    if(mode === "week"){
+      var d = new Date(now); d.setDate(d.getDate() - offset*7);
+      return weekKey(d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()));
+    } else {
+      var d2 = new Date(now.getFullYear(), now.getMonth()-offset, 1);
+      return d2.getFullYear()+"-"+pad(d2.getMonth()+1);
+    }
+  }
+
+  function renderOverview(){
+    var grid = document.getElementById("overviewGrid");
+    var wKeyNow = periodBounds("week",0), wKeyPrev = periodBounds("week",1);
+    var mKeyNow = periodBounds("month",0), mKeyPrev = periodBounds("month",1);
+
+    var byWeek = groupBy(weekKey, weekLabel);
+    var byMonth = groupBy(monthKey, monthLabel);
+
+    var wNow = byWeek.find(function(g){return g.key===wKeyNow;}) || {count:0,points:0};
+    var wPrev = byWeek.find(function(g){return g.key===wKeyPrev;}) || {count:0,points:0};
+    var mNow = byMonth.find(function(g){return g.key===mKeyNow;}) || {count:0,points:0};
+    var mPrev = byMonth.find(function(g){return g.key===mKeyPrev;}) || {count:0,points:0};
+
+    var totalCount = entries.length;
+    var totalPoints = entries.reduce(function(s,e){return s+e.points;},0);
+    var avg = totalCount ? (totalPoints/totalCount) : 0;
+
+    function deltaHtml(now, prev, unit){
+      if(prev===0 && now===0) return '<div class="delta flat">= sett./mese prec.</div>';
+      var diff = now - prev;
+      var cls = diff>0 ? "up" : (diff<0 ? "down" : "flat");
+      var arrow = diff>0 ? "▲" : (diff<0 ? "▼" : "＝");
+      return '<div class="delta '+cls+'">'+arrow+' '+(diff>0?"+":"")+fmtPoints(diff)+' '+unit+'</div>';
+    }
+
+    grid.innerHTML =
+      tile("Schedine totali", totalCount, "") +
+      tile("Punti totali", fmtPoints(totalPoints), "") +
+      tile("Media punti/schedina", fmtPoints(avg), "") +
+      tile("Punti questa settimana", fmtPoints(wNow.points), "", deltaHtml(wNow.points, wPrev.points, "vs sett. sc.")) +
+      tile("Schedine questo mese", mNow.count, "", deltaHtml(mNow.count, mPrev.count, "vs mese sc.")) +
+      tile("Punti questo mese", fmtPoints(mNow.points), "", deltaHtml(mNow.points, mPrev.points, "vs mese sc."));
+  }
+
+  function tile(label, value, unit, deltaHtml){
+    return '<div class="stattile"><div class="label">'+label+'</div>'+
+      '<div class="value">'+value+(unit||'')+'</div>'+
+      (deltaHtml || '') + '</div>';
+  }
+
+  function renderStatsBody(){
+    var groups = statsMode === "week" ? groupBy(weekKey, weekLabel) : groupBy(monthKey, monthLabel);
+    var last = groups.slice(-8);
+    document.getElementById("periodsTitle").textContent =
+      statsMode === "week" ? "Ultime settimane" : "Ultimi mesi";
+
+    // chart
+    var svg = document.getElementById("chart");
+    var W=320,H=160,padL=28,padB=18,padT=8,padR=8;
+    var innerW = W-padL-padR, innerH = H-padT-padB;
+    if(last.length===0){
+      svg.innerHTML = '<text x="160" y="80" text-anchor="middle" font-size="11" fill="#8a8574">Nessun dato ancora</text>';
+    } else {
+      var maxP = Math.max.apply(null, last.map(function(g){return g.points;}).concat([1]));
+      var minP = Math.min.apply(null, last.map(function(g){return g.points;}).concat([0]));
+      var range = (maxP - minP) || 1;
+      var bw = innerW/last.length;
+      var zeroY = padT + innerH - ((0-minP)/range)*innerH;
+      var bars = last.map(function(g,i){
+        var y = g.points>=0 ? zeroY-((g.points-0)/range)*innerH : zeroY;
+        var h = (Math.abs(g.points)/range)*innerH;
+        var x = padL + i*bw + bw*0.18;
+        var w = bw*0.64;
+        var color = g.points>=0 ? "#2F7A4D" : "#B23A32";
+        var label = g.label.split(" ")[0]==="Sett." ? g.key.split("-W")[1] : g.label.slice(0,3);
+        return '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+Math.max(h,1)+'" rx="2" fill="'+color+'"></rect>'+
+          '<text x="'+(x+w/2)+'" y="'+(H-4)+'" text-anchor="middle" font-size="8" fill="#5b5748">'+label+'</text>';
+      }).join("");
+      svg.innerHTML =
+        '<line x1="'+padL+'" y1="'+zeroY+'" x2="'+(W-padR)+'" y2="'+zeroY+'" stroke="#d8d0ba" stroke-width="1"></line>'+
+        bars;
+    }
+
+    // table
+    var tbl = document.getElementById("periodsTable");
+    if(last.length===0){
+      tbl.innerHTML = '<tr><td style="color:#8a8574;font-family:inherit;">Nessun dato</td></tr>';
+    } else {
+      var rows = last.slice().reverse().map(function(g){
+        var avg = g.count ? g.points/g.count : 0;
+        return '<tr><td>'+g.label+'</td><td>'+g.count+' sched.</td><td>'+fmtPoints(g.points)+' pt</td><td>media '+fmtPoints(avg)+'</td></tr>';
+      }).join("");
+      tbl.innerHTML = '<thead><tr><th>Periodo</th><th>Chiuse</th><th>Punti</th><th>Media</th></tr></thead><tbody>'+rows+'</tbody>';
+    }
+  }
+
+  function renderStats(){
+    renderOverview();
+    renderStatsBody();
+  }
+
+  // ---------- CSV export/import ----------
+  function exportCsv(){
+    var rows = ["Data;Categoria;Punti;Note"];
+    entries.slice().sort(function(a,b){return a.date<b.date?-1:1;}).forEach(function(e){
+      var pts = fmtPoints(e.points).replace(".",",");
+      var category = (e.category || "Schedina").replace(/;/g,",");
+      var note = (e.note||"").replace(/;/g,",").replace(/\r?\n/g," ");
+      rows.push(fmtDateIt(e.date)+";"+category+";"+pts+";"+note);
+    });
+    var csv = rows.join("\r\n");
+    var blob = new Blob(["\uFEFF"+csv], {type:"text/csv;charset=utf-8;"});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "schedine_"+todayStr()+".csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
+    showToast("CSV esportato");
+  }
+
+  function parseItDate(s){
+    // accepts d/m/yyyy, dd/mm/yyyy, with / - or . as separator, or yyyy-mm-dd
+    s = s.trim();
+    var m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
+    if(m) return m[3]+"-"+pad(parseInt(m[1],10))+"-"+pad(parseInt(m[2],10));
+    var m2 = s.match(/^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})$/);
+    if(m2) return m2[1]+"-"+pad(parseInt(m2[2],10))+"-"+pad(parseInt(m2[3],10));
+    return null;
+  }
+  function parseNum(s){
+    s = s.trim();
+    if(s.indexOf(",")>-1 && s.indexOf(".")===-1) s = s.replace(",",".");
+    var n = parseFloat(s);
+    return isNaN(n) ? null : n;
+  }
+  function splitCsvLine(line){
+    var delim = line.indexOf(";")>-1 ? ";" : ",";
+    return line.split(delim);
+  }
+  function decodeCsvBuffer(buffer){
+    var bytes = new Uint8Array(buffer);
+    try{
+      return new TextDecoder("utf-8", { fatal:true }).decode(bytes);
+    }catch(e){
+      // non è UTF-8 valido: probabilmente il file è stato risalvato da Excel in Windows-1252
+      return new TextDecoder("windows-1252").decode(bytes);
+    }
+  }
+
+  function importCsvText(text){
+    var lines = text.replace(/^\uFEFF/,"").split(/\r?\n/).filter(function(l){return l.trim()!=="";});
+    if(lines.length===0){ showToast("File vuoto"); return; }
+    var startIdx = 0;
+    var firstCols = splitCsvLine(lines[0]).map(function(c){return c.trim().toLowerCase();});
+    var hasHeader = firstCols.indexOf("data") > -1;
+    var colIdx = { date:0, category:-1, points:1, note:2 }; // vecchio formato di default
+    if(hasHeader){
+      startIdx = 1;
+      colIdx = {
+        date: firstCols.indexOf("data"),
+        category: firstCols.indexOf("categoria"),
+        points: firstCols.indexOf("punti"),
+        note: firstCols.indexOf("note")
+      };
+    }
+    var added = 0, skipped = 0;
+    for(var i=startIdx;i<lines.length;i++){
+      var cols = splitCsvLine(lines[i]);
+      var idx = colIdx;
+      if(!hasHeader){
+        // senza intestazione, deduco il formato dal numero di colonne della riga
+        idx = cols.length>=4 ? {date:0,category:1,points:2,note:3} : {date:0,category:-1,points:1,note:2};
+      }
+      if(cols.length<2){ skipped++; continue; }
+      var date = idx.date>-1 ? parseItDate(cols[idx.date]||"") : null;
+      var pts = idx.points>-1 ? parseNum(cols[idx.points]||"") : null;
+      var category = (idx.category>-1 && cols[idx.category]) ? cols[idx.category].trim() : "Schedina";
+      var note = (idx.note>-1 && cols[idx.note]) ? cols[idx.note].trim() : "";
+      if(!date || pts===null){ skipped++; continue; }
+      entries.push({ id: uid(), date: date, points: pts, category: category, note: note });
+      added++;
+    }
+    save();
+    renderAll();
+    showToast(added+" righe importate"+(skipped?", "+skipped+" saltate":""));
+  }
+
+  // ---------- events ----------
+  function confirmDialog(message){
+    return new Promise(function(resolve){
+      var overlay = document.getElementById("modalOverlay");
+      document.getElementById("modalMsg").textContent = message;
+      overlay.classList.remove("hidden");
+      function cleanup(result){
+        overlay.classList.add("hidden");
+        okBtn.removeEventListener("click", onOk);
+        cancelBtn.removeEventListener("click", onCancel);
+        resolve(result);
+      }
+      var okBtn = document.getElementById("modalOk");
+      var cancelBtn = document.getElementById("modalCancel");
+      function onOk(){ cleanup(true); }
+      function onCancel(){ cleanup(false); }
+      okBtn.addEventListener("click", onOk);
+      cancelBtn.addEventListener("click", onCancel);
+    });
+  }
+
+  function showToast(msg){
+    var t = document.getElementById("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(showToast._h);
+    showToast._h = setTimeout(function(){ t.classList.remove("show"); }, 2200);
+  }
+
+  function switchTab(name){
+    ["add","history","stats"].forEach(function(t){
+      document.getElementById("tab-"+t).classList.toggle("hidden", t!==name);
+    });
+    document.querySelectorAll(".tabbtn").forEach(function(b){
+      b.classList.toggle("active", b.getAttribute("data-tab")===name);
+    });
+    if(name==="stats") renderStats();
+    if(name==="history") renderHistory();
+  }
+
+  function renderAll(){
+    renderHeader();
+    renderHistory();
+    renderStats();
+  }
+
+  document.addEventListener("DOMContentLoaded", function(){
+    load();
+    document.getElementById("inDate").value = todayStr();
+    renderAll();
+
+    document.querySelectorAll(".tabbtn").forEach(function(b){
+      b.addEventListener("click", function(){ switchTab(b.getAttribute("data-tab")); });
+    });
+
+    document.getElementById("addBtn").addEventListener("click", function(){
+      var date = document.getElementById("inDate").value || todayStr();
+      var category = document.getElementById("inCategory").value;
+      var ptsRaw = document.getElementById("inPoints").value;
+      var note = document.getElementById("inNote").value.trim();
+      if(ptsRaw === ""){ showToast("Inserisci i punti"); return; }
+      var pts = parseFloat(ptsRaw);
+      if(isNaN(pts)){ showToast("Punti non validi"); return; }
+      entries.push({ id: uid(), date: date, points: pts, category: category, note: note });
+      save();
+      document.getElementById("inPoints").value = "3";
+      document.getElementById("inNote").value = "";
+      renderAll();
+      var card = document.getElementById("addCard");
+      card.classList.remove("stamp"); void card.offsetWidth; card.classList.add("stamp");
+      showToast("Schedina registrata");
+    });
+
+    document.getElementById("historyList").addEventListener("click", function(ev){
+      var id = ev.target.getAttribute("data-del");
+      if(!id) return;
+      confirmDialog("Eliminare questa schedina?").then(function(ok){
+        if(!ok) return;
+        entries = entries.filter(function(e){ return e.id !== id; });
+        save();
+        renderAll();
+        showToast("Schedina eliminata");
+      });
+    });
+
+    document.getElementById("exportBtn").addEventListener("click", exportCsv);
+    document.getElementById("importBtn").addEventListener("click", function(){
+      document.getElementById("importFile").click();
+    });
+    document.getElementById("importFile").addEventListener("change", function(ev){
+      var file = ev.target.files[0];
+      if(!file) return;
+      confirmDialog("Importare \""+file.name+"\"? Le righe valide verranno aggiunte a quelle già presenti.").then(function(ok){
+        if(!ok){ ev.target.value = ""; return; }
+        var reader = new FileReader();
+        reader.onload = function(){
+          var text = decodeCsvBuffer(reader.result);
+          importCsvText(text);
+        };
+        reader.readAsArrayBuffer(file);
+        ev.target.value = "";
+      });
+    });
+
+    document.getElementById("toggleWeek").addEventListener("click", function(){
+      statsMode = "week";
+      document.getElementById("toggleWeek").classList.add("active");
+      document.getElementById("toggleMonth").classList.remove("active");
+      renderStatsBody();
+    });
+    document.getElementById("toggleMonth").addEventListener("click", function(){
+      statsMode = "month";
+      document.getElementById("toggleMonth").classList.add("active");
+      document.getElementById("toggleWeek").classList.remove("active");
+      renderStatsBody();
+    });
+
+    document.getElementById("menuBtn").addEventListener("click", function(){
+      confirmDialog("Cancellare TUTTI i dati salvati su questo dispositivo? L'operazione non è reversibile (esporta prima il CSV se vuoi un backup).").then(function(ok){
+        if(!ok) return;
+        entries = [];
+        save();
+        renderAll();
+        showToast("Dati cancellati");
+      });
+    });
+  });
+})();
+</script>
+<script>
+if("serviceWorker" in navigator){
+  window.addEventListener("load", function(){
+    navigator.serviceWorker.register("sw.js").catch(function(){ /* offline non disponibile, l'app funziona comunque online */ });
+  });
+}
+</script>
+</body>
+</html>
