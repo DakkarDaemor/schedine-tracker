@@ -54,7 +54,7 @@ main{flex:1;padding:16px 16px 90px;overflow-y:auto;}
 label{display:block;font-size:11px;letter-spacing:1px;text-transform:uppercase;
   color:var(--ink-soft);margin-bottom:5px;margin-top:12px;font-weight:700;}
 label:first-of-type{margin-top:0;}
-input[type=date],input[type=number],input[type=text],select{
+input[type=date],input[type=number],input[type=text],input[type=password],select{
   width:100%;padding:10px 12px;border-radius:7px;border:1px solid #d8d0ba;
   background:#fff;color:var(--ink);font-size:16px;font-family:inherit;
   appearance:none;-webkit-appearance:none;
