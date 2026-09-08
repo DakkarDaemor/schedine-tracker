@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Schedine Tracker</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#123524">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Schedine">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app">
+
+  <header class="top">
+    <div>
+      <h1>Schedine Tracker</h1>
+      <div class="sub" id="headerSub">0 registrate</div>
+    </div>
+    <button class="iconbtn" id="menuBtn" title="Dati">⋮</button>
+  </header>
+
+  <main>
+
+    <!-- TAB: AGGIUNGI -->
+    <section id="tab-add">
+      <div class="card" id="addCard">
+        <h2>Nuova schedina</h2>
+        <label for="inDate">Data</label>
+        <input type="date" id="inDate">
+        <label for="inCategory">Categoria</label>
+        <select id="inCategory">
+          <option value="Schedina" selected style="background:#C9A227;color:#20241f;">Schedina</option>
+          <option value="PR Check" style="background:#3B7A8C;color:#fff;">PR Check</option>
+          <option value="Meeting" style="background:#7A5C9E;color:#fff;">Meeting</option>
+          <option value="Rebase" style="background:#C97A2A;color:#20241f;">Rebase</option>
+          <option value="Rework" style="background:#B23A32;color:#fff;">Rework</option>
+        </select>
+        <label for="inPoints">Punti</label>
+        <select id="inPoints">
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3" selected>3</option>
+          <option value="5">5</option>
+          <option value="8">8</option>
+          <option value="13">13</option>
+          <option value="21">21</option>
+          <option value="34">34</option>
+          <option value="55">55</option>
+        </select>
+        <label for="inNote">Nota (opzionale)</label>
+        <input type="text" id="inNote" placeholder="es. schedina Champions">
+        <button class="btn" id="addBtn">Registra schedina</button>
+      </div>
+
+      <div class="card" id="importExportCard">
+        <h2>Dati (CSV / Excel)</h2>
+        <div class="rowbtns">
+          <button class="btn secondary small" id="exportBtn" style="flex:1">Esporta CSV</button>
+          <button class="btn secondary small" id="importBtn" style="flex:1">Importa CSV</button>
+        </div>
+        <input type="file" id="importFile" accept=".csv,text/csv">
+        <div class="hint">Il CSV usa il punto e virgola (;) e la virgola decimale, compatibile con Excel in italiano. L'import aggiunge le righe a quelle esistenti.</div>
+      </div>
+    </section>
+
+    <!-- TAB: STORICO -->
+    <section id="tab-history" class="hidden">
+      <div id="historyList"></div>
+      <div class="empty hidden" id="historyEmpty">Nessuna schedina registrata.<br>Aggiungine una dalla tab "Aggiungi".</div>
+    </section>
+
+    <!-- TAB: STATISTICHE -->
+    <section id="tab-stats" class="hidden">
+      <div class="statgrid" id="overviewGrid"></div>
+      <div class="toggle">
+        <button id="toggleWeek" class="active">Settimanale</button>
+        <button id="toggleMonth">Mensile</button>
+      </div>
+      <div class="chartwrap">
+        <svg id="chart" viewBox="0 0 320 160" preserveAspectRatio="xMidYMid meet"></svg>
+      </div>
+      <div class="card">
+        <h2 id="periodsTitle">Ultime settimane</h2>
+        <table class="periods" id="periodsTable"></table>
+      </div>
+    </section>
+
+  </main>
+
+  <nav class="tabs">
+    <button class="tabbtn active" data-tab="add"><span class="ic">＋</span>Aggiungi</button>
+    <button class="tabbtn" data-tab="history"><span class="ic">☰</span>Storico</button>
+    <button class="tabbtn" data-tab="stats"><span class="ic">▤</span>Statistiche</button>
+  </nav>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="modalOverlay hidden" id="modalOverlay">
+    <div class="modalBox">
+      <div class="modalMsg" id="modalMsg"></div>
+      <div class="modalBtns">
+        <button class="btn secondary small" id="modalCancel" style="flex:1">Annulla</button>
+        <button class="btn danger small" id="modalOk" style="flex:1">Conferma</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modalOverlay hidden" id="menuOverlay">
+    <div class="modalBox">
+      <div class="modalMsg">Dati e sincronizzazione</div>
+      <button class="btn secondary small" id="menuSyncBtn" style="width:100%;margin-bottom:8px;">🔗 Sincronizza tra dispositivi</button>
+      <button class="btn danger small" id="menuDeleteBtn" style="width:100%;margin-bottom:8px;">🗑 Cancella dati locali</button>
+      <button class="btn secondary small" id="menuCloseBtn" style="width:100%;">Chiudi</button>
+    </div>
+  </div>
+
+  <div class="modalOverlay hidden" id="syncOverlay">
+    <div class="modalBox">
+      <div class="modalMsg">Inserisci una passphrase. Usando la stessa su più dispositivi vedrai sempre lo stesso storico.</div>
+      <input type="text" id="syncPassInput" placeholder="Passphrase" style="margin-bottom:12px;">
+      <div class="rowbtns">
+        <button class="btn small" id="syncSaveBtn" style="flex:1">Sincronizza</button>
+        <button class="btn secondary small" id="syncCancelBtn" style="flex:1">Annulla</button>
+      </div>
+      <button class="btn danger small hidden" id="syncDisconnectBtn" style="width:100%;margin-top:8px;">Disconnetti (solo locale)</button>
+      <div class="hint" id="syncStatusHint"></div>
+    </div>
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+<script type="module" src="js/sync.js"></script>
+<script src="js/register-sw.js"></script>
+</body>
+</html>
