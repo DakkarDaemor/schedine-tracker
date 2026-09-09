@@ -1,6 +1,7 @@
-// Service worker minimale: cache-first per l'uso offline.
-// Da aggiornare (CACHE_NAME) ad ogni release per invalidare la cache vecchia.
-var CACHE_NAME = "schedine-cache-v12";
+// Service worker: network-first per i file dell'app (così gli aggiornamenti
+// arrivano subito, al primo caricamento online), con fallback alla cache per
+// l'uso offline. CACHE_NAME va comunque aggiornato ad ogni release.
+var CACHE_NAME = "schedine-cache-v13";
 var ASSETS = [
   "./",
   "./index.html",
@@ -35,15 +36,25 @@ self.addEventListener("activate", function(event){
 });
 
 self.addEventListener("fetch", function(event){
+  var req = event.request;
+  if(req.method !== "GET") return;
+
+  var url = new URL(req.url);
+  // risorse esterne (SDK Firebase su gstatic, ecc.): lascia gestire al browser
+  if(url.origin !== self.location.origin) return;
+
   event.respondWith(
-    caches.match(event.request).then(function(cached){
-      if(cached) return cached;
-      return fetch(event.request).then(function(response){
+    fetch(req).then(function(response){
+      // aggiorna la cache con la copia fresca
+      if(response && response.ok){
         var copy = response.clone();
-        caches.open(CACHE_NAME).then(function(cache){ cache.put(event.request, copy); });
-        return response;
-      }).catch(function(){
-        return cached;
+        caches.open(CACHE_NAME).then(function(cache){ cache.put(req, copy); });
+      }
+      return response;
+    }).catch(function(){
+      // offline: usa la cache, con l'index come ultima spiaggia per le navigazioni
+      return caches.match(req).then(function(cached){
+        return cached || caches.match("./index.html");
       });
     })
   );
