@@ -153,6 +153,9 @@
   }
 
   // ---------- rendering: history ----------
+  var HISTORY_PAGE = 50;
+  var historyShown = HISTORY_PAGE; // lo storico può crescere molto: si rendono
+                                   // solo le più recenti, il resto a richiesta
   function renderHistory(){
     var list = document.getElementById("historyList");
     var empty = document.getElementById("historyEmpty");
@@ -166,7 +169,10 @@
       return;
     }
     empty.classList.add("hidden");
-    list.innerHTML = sorted.map(function(e){
+    if(historyShown > sorted.length) historyShown = Math.max(HISTORY_PAGE, sorted.length);
+    var shown = sorted.slice(0, historyShown);
+    var remaining = sorted.length - shown.length;
+    list.innerHTML = shown.map(function(e){
       var d = new Date(e.date+"T00:00:00");
       var cls = e.points > 0 ? "pos" : (e.points < 0 ? "neg" : "");
       return '<div class="ticket" data-id="'+e.id+'">'+
@@ -180,7 +186,10 @@
           '<button class="del" data-del="'+e.id+'">✕</button>'+
         '</div>'+
       '</div>';
-    }).join("");
+    }).join("") +
+    (remaining > 0
+      ? '<button class="btn secondary small" data-more="1" style="width:100%;margin-top:4px;">Mostra altre ('+remaining+')</button>'
+      : "");
   }
   function escapeHtml(s){
     return s.replace(/[&<>"']/g, function(c){
@@ -559,6 +568,11 @@
     });
 
     document.getElementById("historyList").addEventListener("click", function(ev){
+      if(ev.target.getAttribute("data-more")){
+        historyShown += HISTORY_PAGE;
+        renderHistory();
+        return;
+      }
       var id = ev.target.getAttribute("data-del");
       if(!id) return;
       confirmDialog("Eliminare questa schedina?").then(function(ok){
