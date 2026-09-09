@@ -243,9 +243,16 @@
       (deltaHtml || '') + '</div>';
   }
 
+  // finestra di periodi condivisa da grafico a barre, tabella e torta: gli ultimi
+  // 8 periodi (settimane o mesi) che hanno almeno una schedina.
+  function periodGrouping(){
+    var keyFn = statsMode === "week" ? weekKey : monthKey;
+    var labelFn = statsMode === "week" ? weekLabel : monthLabel;
+    return { keyFn: keyFn, last: groupBy(keyFn, labelFn).slice(-8) };
+  }
+
   function renderStatsBody(){
-    var groups = statsMode === "week" ? groupBy(weekKey, weekLabel) : groupBy(monthKey, monthLabel);
-    var last = groups.slice(-8);
+    var last = periodGrouping().last;
     document.getElementById("periodsTitle").textContent =
       statsMode === "week" ? "Ultime settimane" : "Ultimi mesi";
 
@@ -292,17 +299,25 @@
   function renderCategoryChart(){
     var svg = document.getElementById("categoryChart");
     var legend = document.getElementById("categoryLegend");
+    document.getElementById("categoryTitle").textContent =
+      statsMode === "week" ? "Categorie · ultime settimane" : "Categorie · ultimi mesi";
+
+    var pg = periodGrouping();
+    var inWindow = {};
+    pg.last.forEach(function(g){ inWindow[g.key] = true; });
+    var scoped = entries.filter(function(e){ return inWindow[pg.keyFn(e.date)]; });
+
     var counts = {};
     var order = [];
-    entries.forEach(function(e){
+    scoped.forEach(function(e){
       var cat = e.category || "Schedina";
       if(!counts[cat]){ counts[cat] = 0; order.push(cat); }
       counts[cat] += 1;
     });
-    var total = entries.length;
+    var total = scoped.length;
     if(total === 0){
       svg.innerHTML = '<circle cx="60" cy="60" r="54" fill="none" stroke="#e3dcc6" stroke-width="12"></circle>';
-      legend.innerHTML = '<div class="row"><span class="name">Nessun dato ancora</span></div>';
+      legend.innerHTML = '<div class="row"><span class="name">Nessun dato nel periodo</span></div>';
       return;
     }
     order.sort(function(a,b){ return counts[b]-counts[a]; });
@@ -340,10 +355,15 @@
     return { x: cx + r*Math.sin(rad), y: cy - r*Math.cos(rad) };
   }
 
-  function renderStats(){
-    renderOverview();
+  // viste guidate dal toggle settimanale/mensile (barre, tabella, torta)
+  function renderPeriodViews(){
     renderStatsBody();
     renderCategoryChart();
+  }
+
+  function renderStats(){
+    renderOverview();
+    renderPeriodViews();
   }
 
   // ---------- CSV export/import ----------
@@ -574,13 +594,13 @@
       statsMode = "week";
       document.getElementById("toggleWeek").classList.add("active");
       document.getElementById("toggleMonth").classList.remove("active");
-      renderStatsBody();
+      renderPeriodViews();
     });
     document.getElementById("toggleMonth").addEventListener("click", function(){
       statsMode = "month";
       document.getElementById("toggleMonth").classList.add("active");
       document.getElementById("toggleWeek").classList.remove("active");
-      renderStatsBody();
+      renderPeriodViews();
     });
 
     document.getElementById("menuBtn").addEventListener("click", function(){

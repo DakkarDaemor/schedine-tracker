@@ -141,6 +141,11 @@ input:focus{outline:2px solid var(--gold-dim);outline-offset:1px;}
 .chartwrap{background:var(--paper);border-radius:var(--radius);padding:14px 10px;color:var(--ink);margin-bottom:14px;}
 .chartwrap svg{width:100%;display:block;}
 
+.statsep{display:flex;align-items:center;gap:10px;margin:4px 0 16px;
+  color:rgba(246,241,228,0.45);font-size:10px;font-weight:700;
+  letter-spacing:2px;text-transform:uppercase;}
+.statsep::before,.statsep::after{content:"";flex:1;height:1px;background:rgba(246,241,228,0.15);}
+
 .pieWrap{display:flex;align-items:center;gap:18px;}
 .pieWrap svg{width:120px;height:120px;flex-shrink:0;}
 .pieLegend{flex:1;display:flex;flex-direction:column;gap:8px;min-width:0;}
