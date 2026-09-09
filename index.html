@@ -76,7 +76,13 @@
 
     <!-- TAB: STATISTICHE -->
     <section id="tab-stats" class="hidden">
-      <div class="statgrid" id="overviewGrid"></div>
+      <div class="card">
+        <h2>Ripartizione per categoria</h2>
+        <div class="pieWrap">
+          <svg id="categoryChart" viewBox="0 0 120 120"></svg>
+          <div id="categoryLegend" class="pieLegend"></div>
+        </div>
+      </div>
       <div class="toggle">
         <button id="toggleWeek" class="active">Settimanale</button>
         <button id="toggleMonth">Mensile</button>
@@ -84,16 +90,10 @@
       <div class="chartwrap">
         <svg id="chart" viewBox="0 0 320 160" preserveAspectRatio="xMidYMid meet"></svg>
       </div>
+      <div class="statgrid" id="overviewGrid"></div>
       <div class="card">
         <h2 id="periodsTitle">Ultime settimane</h2>
         <table class="periods" id="periodsTable"></table>
-      </div>
-      <div class="card">
-        <h2>Ripartizione per categoria</h2>
-        <div class="pieWrap">
-          <svg id="categoryChart" viewBox="0 0 120 120"></svg>
-          <div id="categoryLegend" class="pieLegend"></div>
-        </div>
       </div>
     </section>
 
@@ -123,7 +123,7 @@
       <button class="btn secondary small" id="menuSyncBtn" style="width:100%;margin-bottom:8px;">🔗 Sincronizza tra dispositivi</button>
       <button class="btn danger small" id="menuDeleteBtn" style="width:100%;margin-bottom:8px;">🗑 Cancella dati locali</button>
       <button class="btn secondary small" id="menuCloseBtn" style="width:100%;">Chiudi</button>
-      <div class="hint" style="text-align:center;margin-top:12px;margin-bottom:0;">v9</div>
+      <div class="hint" style="text-align:center;margin-top:12px;margin-bottom:0;">v10</div>
     </div>
   </div>
 

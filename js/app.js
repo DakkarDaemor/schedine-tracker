@@ -1,7 +1,9 @@
 (function(){
   "use strict";
   var STORAGE_KEY = "schedine_entries_v1";
+  var DELETED_KEY = "schedine_deleted_v1";
   var entries = [];
+  var deleted = {}; // tombstone { id: timestamp } — schedine eliminate, per non farle riapparire dal cloud
 
   // ---------- storage ----------
   function load(){
@@ -9,6 +11,11 @@
       var raw = localStorage.getItem(STORAGE_KEY);
       entries = raw ? JSON.parse(raw) : [];
     }catch(e){ entries = []; }
+    try{
+      var rawDel = localStorage.getItem(DELETED_KEY);
+      deleted = rawDel ? JSON.parse(rawDel) : {};
+      if(!deleted || typeof deleted !== "object") deleted = {};
+    }catch(e){ deleted = {}; }
     // migrazione: le schedine salvate prima dell'introduzione della categoria
     // vengono uniformate al default "Schedina"; "Rework" è stata accorpata in "Rebase"
     var migrated = false;
@@ -18,15 +25,53 @@
     });
     if(migrated) save();
   }
-  function save(){
+  function persistLocal(){
     try{
       localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+      localStorage.setItem(DELETED_KEY, JSON.stringify(deleted));
     }catch(e){
       showToast("Errore nel salvataggio dati");
     }
-    if(window.SchedineSync && window.SchedineSync.isConnected()){
-      window.SchedineSync.push(entries);
-    }
+  }
+  function save(){
+    persistLocal();
+    scheduleSync();
+  }
+
+  function markDeleted(id){
+    deleted[id] = Date.now();
+  }
+
+  // ---------- sync ----------
+  var syncTimer = null;
+  function syncActive(){
+    return !!(window.SchedineSync && window.SchedineSync.isConnected());
+  }
+  function scheduleSync(){
+    if(!syncActive()) return;
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(syncNow, 800);
+  }
+  // Consolida lo stato locale col cloud (read-merge-write atomico lato sync).
+  // Non sovrascrive i dati di un altro dispositivo: al ritorno adottiamo lo
+  // stato fuso. Se offline è un no-op silenzioso, si riprova al salvataggio dopo.
+  function syncNow(){
+    if(!syncActive()) return Promise.resolve(true);
+    clearTimeout(syncTimer);
+    return window.SchedineSync.push({ entries: entries, deleted: deleted })
+      .then(function(merged){
+        if(merged){ adoptState(merged); return true; }
+        return false; // offline: stato salvo in locale, si ritenta più tardi
+      })
+      .catch(function(){ return false; });
+  }
+  // Sostituisce lo stato in memoria con quello consolidato SENZA ri-schedulare un
+  // push (evita loop di sincronizzazione).
+  function adoptState(state){
+    if(Array.isArray(state.entries)) entries = state.entries;
+    if(state.deleted && typeof state.deleted === "object") deleted = state.deleted;
+    persistLocal();
+    renderAll();
   }
 
   // ---------- utils ----------
@@ -457,20 +502,19 @@
     document.getElementById("inDate").value = todayStr();
     renderAll();
 
-    if(window.SchedineSync && window.SchedineSync.isConnected()){
-      window.SchedineSync.pull().then(function(cloudEntries){
-        if(cloudEntries === null){
-          // prima sincronizzazione da questo dispositivo: carico i dati locali sul cloud
-          window.SchedineSync.push(entries);
-        } else {
-          entries = cloudEntries;
-          save();
-          renderAll();
-        }
-      }).catch(function(){
-        showToast("Sync non riuscita, uso i dati locali");
+    if(syncActive()){
+      // niente più "sostituisci il locale col cloud": syncNow fa un merge atomico
+      // (unione delle schedine per id + tombstone), quindi le modifiche fatte
+      // offline su questo dispositivo non vengono perse.
+      syncNow().then(function(ok){
+        if(!ok) showToast("Sync non riuscita, uso i dati locali");
       });
     }
+
+    // riallinea quando si torna sull'app (es. modifica fatta su un altro dispositivo)
+    document.addEventListener("visibilitychange", function(){
+      if(document.visibilityState === "visible") scheduleSync();
+    });
 
     document.querySelectorAll(".tabbtn").forEach(function(b){
       b.addEventListener("click", function(){ switchTab(b.getAttribute("data-tab")); });
@@ -499,6 +543,7 @@
       if(!id) return;
       confirmDialog("Eliminare questa schedina?").then(function(ok){
         if(!ok) return;
+        markDeleted(id);
         entries = entries.filter(function(e){ return e.id !== id; });
         save();
         renderAll();
@@ -546,8 +591,12 @@
     });
     document.getElementById("menuDeleteBtn").addEventListener("click", function(){
       document.getElementById("menuOverlay").classList.add("hidden");
-      confirmDialog("Cancellare TUTTI i dati salvati su questo dispositivo? L'operazione non è reversibile (esporta prima il CSV se vuoi un backup).").then(function(ok){
+      var msg = syncActive()
+        ? "Cancellare TUTTE le schedine? La sincronizzazione è attiva, quindi verranno rimosse anche dagli altri dispositivi. L'operazione non è reversibile (esporta prima il CSV se vuoi un backup)."
+        : "Cancellare TUTTI i dati salvati su questo dispositivo? L'operazione non è reversibile (esporta prima il CSV se vuoi un backup).";
+      confirmDialog(msg).then(function(ok){
         if(!ok) return;
+        entries.forEach(function(e){ markDeleted(e.id); });
         entries = [];
         save();
         renderAll();
@@ -574,17 +623,16 @@
         showToast("Sincronizzazione non configurata");
         return;
       }
-      window.SchedineSync.connect(pass).then(function(cloudEntries){
-        if(cloudEntries === null){
-          window.SchedineSync.push(entries);
-          showToast("Sincronizzazione attivata, dati caricati sul cloud");
-        } else {
-          entries = cloudEntries;
-          save();
-          renderAll();
-          showToast("Dati sincronizzati da un altro dispositivo");
+      window.SchedineSync.connect(pass).then(function(remote){
+        // Fondiamo subito in memoria (funziona anche offline), poi consolidiamo
+        // sul cloud. remote === null => profilo nuovo.
+        if(remote){
+          adoptState(window.SchedineSync.merge(remote, { entries: entries, deleted: deleted }));
         }
-        document.getElementById("syncOverlay").classList.add("hidden");
+        return syncNow().then(function(){
+          showToast(remote ? "Dati uniti con l'altro dispositivo" : "Sincronizzazione attivata");
+          document.getElementById("syncOverlay").classList.add("hidden");
+        });
       }).catch(function(){
         showToast("Errore di sincronizzazione, riprova");
       });
