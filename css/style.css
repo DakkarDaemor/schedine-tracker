@@ -182,6 +182,7 @@ input[type=file]{display:none;}
 .rowbtns{display:flex;gap:8px;margin-top:14px;}
 .rowbtns .btn{margin-top:0;}
 .hint{font-size:11px;color:rgba(246,241,228,0.45);margin-top:8px;line-height:1.5;}
+.card .hint, .modalBox .hint{color:var(--ink-soft);}
 
 .modalOverlay{
   position:fixed;inset:0;background:rgba(0,0,0,0.55);
