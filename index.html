@@ -39,7 +39,6 @@
           <option value="PR Check" style="background:#3B7A8C;color:#fff;">PR Check</option>
           <option value="Meeting" style="background:#7A5C9E;color:#fff;">Meeting</option>
           <option value="Rebase" style="background:#C97A2A;color:#20241f;">Rebase</option>
-          <option value="Rework" style="background:#B23A32;color:#fff;">Rework</option>
         </select>
         <label for="inPoints">Punti</label>
         <select id="inPoints">
@@ -88,6 +87,13 @@
       <div class="card">
         <h2 id="periodsTitle">Ultime settimane</h2>
         <table class="periods" id="periodsTable"></table>
+      </div>
+      <div class="card">
+        <h2>Ripartizione per categoria</h2>
+        <div class="pieWrap">
+          <svg id="categoryChart" viewBox="0 0 120 120"></svg>
+          <div id="categoryLegend" class="pieLegend"></div>
+        </div>
       </div>
     </section>
 

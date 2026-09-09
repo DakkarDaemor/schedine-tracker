@@ -10,10 +10,11 @@
       entries = raw ? JSON.parse(raw) : [];
     }catch(e){ entries = []; }
     // migrazione: le schedine salvate prima dell'introduzione della categoria
-    // vengono uniformate al default "Schedina"
+    // vengono uniformate al default "Schedina"; "Rework" è stata accorpata in "Rebase"
     var migrated = false;
     entries.forEach(function(e){
       if(!e.category){ e.category = "Schedina"; migrated = true; }
+      else if(e.category === "Rework"){ e.category = "Rebase"; migrated = true; }
     });
     if(migrated) save();
   }
@@ -59,11 +60,14 @@
     "Schedina": {bg:"#C9A227", fg:"#20241f"},
     "PR Check": {bg:"#3B7A8C", fg:"#ffffff"},
     "Meeting":  {bg:"#7A5C9E", fg:"#ffffff"},
-    "Rebase":   {bg:"#C97A2A", fg:"#20241f"},
-    "Rework":   {bg:"#B23A32", fg:"#ffffff"}
+    "Rebase":   {bg:"#C97A2A", fg:"#20241f"}
   };
   function categoryStyle(cat){
     return CATEGORY_STYLES[cat] || {bg:"#8a8574", fg:"#ffffff"}; // fallback per categorie custom da CSV
+  }
+  function normalizeCategory(cat){
+    // "Rework" è stata accorpata in "Rebase"
+    return cat === "Rework" ? "Rebase" : cat;
   }
 
   function weekKey(iso){
@@ -240,9 +244,61 @@
     }
   }
 
+  function renderCategoryChart(){
+    var svg = document.getElementById("categoryChart");
+    var legend = document.getElementById("categoryLegend");
+    var counts = {};
+    var order = [];
+    entries.forEach(function(e){
+      var cat = e.category || "Schedina";
+      if(!counts[cat]){ counts[cat] = 0; order.push(cat); }
+      counts[cat] += 1;
+    });
+    var total = entries.length;
+    if(total === 0){
+      svg.innerHTML = '<circle cx="60" cy="60" r="54" fill="none" stroke="#e3dcc6" stroke-width="12"></circle>';
+      legend.innerHTML = '<div class="row"><span class="name">Nessun dato ancora</span></div>';
+      return;
+    }
+    order.sort(function(a,b){ return counts[b]-counts[a]; });
+    var cx=60, cy=60, r=54;
+    var angle = 0; // 0 = ore 12, si procede in senso orario
+    var slices = order.map(function(cat){
+      var frac = counts[cat]/total;
+      var startAngle = angle;
+      var endAngle = angle + frac*360;
+      angle = endAngle;
+      var color = categoryStyle(cat).bg;
+      if(frac >= 0.999){
+        // categoria unica: cerchio pieno, un arco non si disegna correttamente
+        return '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="'+color+'"></circle>';
+      }
+      var start = polarToCartesian(cx, cy, r, startAngle);
+      var end = polarToCartesian(cx, cy, r, endAngle);
+      var largeArc = (endAngle-startAngle) > 180 ? 1 : 0;
+      var d = 'M'+cx+','+cy+' L'+start.x+','+start.y+' A'+r+','+r+' 0 '+largeArc+' 1 '+end.x+','+end.y+' Z';
+      return '<path d="'+d+'" fill="'+color+'"></path>';
+    }).join("");
+    svg.innerHTML = slices;
+    legend.innerHTML = order.map(function(cat){
+      var pct = Math.round((counts[cat]/total)*100);
+      return '<div class="row">'+
+        '<span class="dot" style="background:'+categoryStyle(cat).bg+'"></span>'+
+        '<span class="name">'+escapeHtml(cat)+' ('+counts[cat]+')</span>'+
+        '<span class="pct">'+pct+'%</span>'+
+      '</div>';
+    }).join("");
+  }
+  function polarToCartesian(cx, cy, r, angleDeg){
+    // angleDeg: 0 = ore 12, cresce in senso orario
+    var rad = angleDeg * Math.PI/180;
+    return { x: cx + r*Math.sin(rad), y: cy - r*Math.cos(rad) };
+  }
+
   function renderStats(){
     renderOverview();
     renderStatsBody();
+    renderCategoryChart();
   }
 
   // ---------- CSV export/import ----------
@@ -323,7 +379,7 @@
       if(cols.length<2){ skipped++; continue; }
       var date = idx.date>-1 ? parseItDate(cols[idx.date]||"") : null;
       var pts = idx.points>-1 ? parseNum(cols[idx.points]||"") : null;
-      var category = (idx.category>-1 && cols[idx.category]) ? cols[idx.category].trim() : "Schedina";
+      var category = normalizeCategory((idx.category>-1 && cols[idx.category]) ? cols[idx.category].trim() : "Schedina");
       var note = (idx.note>-1 && cols[idx.note]) ? cols[idx.note].trim() : "";
       if(!date || pts===null){ skipped++; continue; }
       entries.push({ id: uid(), date: date, points: pts, category: category, note: note });
