@@ -51,7 +51,7 @@ service worker potrebbe continuare a servire la versione vecchia dalla cache.
 
 Lo stesso numero è mostrato nell'app (menu `⋮` in basso) come promemoria di quale
 versione hai davanti: quando bumpi `CACHE_NAME`, aggiorna allo stesso valore anche
-la riga `<div class="hint" ...>v8</div>` dentro il blocco `menuOverlay` in
+la riga `<div class="hint" ...>v9</div>` dentro il blocco `menuOverlay` in
 `index.html`.
 
 ## Backup dei dati
