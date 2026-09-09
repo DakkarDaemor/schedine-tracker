@@ -82,6 +82,9 @@ input:focus{outline:2px solid var(--gold-dim);outline-offset:1px;}
 .card .btn.secondary, .modalBox .btn.secondary{color:var(--ink);border:1px solid #c9c0a4;background:var(--paper-dim);}
 .btn.small{width:auto;padding:8px 12px;font-size:11px;margin-top:0;}
 .btn.danger{background:var(--neg);color:#fff;}
+/* "Mostra altre" nello storico: fuori da .card, va reso come i pulsanti chiari */
+.btn.secondary.morebtn{width:100%;margin-top:6px;background:var(--paper-dim);
+  color:var(--ink);border:1px solid #c9c0a4;}
 
 .stamp{animation:stampPop .35s ease;}
 @keyframes stampPop{

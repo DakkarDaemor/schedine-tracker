@@ -188,7 +188,7 @@
       '</div>';
     }).join("") +
     (remaining > 0
-      ? '<button class="btn secondary small" data-more="1" style="width:100%;margin-top:4px;">Mostra altre ('+remaining+')</button>'
+      ? '<button class="btn secondary small morebtn" data-more="1">Mostra altre ('+remaining+')</button>'
       : "");
   }
   function escapeHtml(s){
@@ -309,12 +309,12 @@
     var svg = document.getElementById("categoryChart");
     var legend = document.getElementById("categoryLegend");
     document.getElementById("categoryTitle").textContent =
-      statsMode === "week" ? "Categorie · ultime settimane" : "Categorie · ultimi mesi";
+      statsMode === "week" ? "Categorie · ultima settimana" : "Categorie · ultimo mese";
 
-    var pg = periodGrouping();
-    var inWindow = {};
-    pg.last.forEach(function(g){ inWindow[g.key] = true; });
-    var scoped = entries.filter(function(e){ return inWindow[pg.keyFn(e.date)]; });
+    // solo il periodo corrente: l'ultima settimana ISO o il mese in corso
+    var keyFn = statsMode === "week" ? weekKey : monthKey;
+    var periodNow = periodBounds(statsMode, 0);
+    var scoped = entries.filter(function(e){ return keyFn(e.date) === periodNow; });
 
     var counts = {};
     var order = [];
