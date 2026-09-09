@@ -49,6 +49,11 @@ cambi qualsiasi file elencato in `ASSETS` dentro `sw.js` (incluso il contenuto d
 `CACHE_NAME` dentro `sw.js` (es. da `schedine-cache-v3` a `v4`), altrimenti il
 service worker potrebbe continuare a servire la versione vecchia dalla cache.
 
+Lo stesso numero è mostrato nell'app (menu `⋮` in basso) come promemoria di quale
+versione hai davanti: quando bumpi `CACHE_NAME`, aggiorna allo stesso valore anche
+la riga `<div class="hint" ...>v7</div>` dentro il blocco `menuOverlay` in
+`index.html`.
+
 ## Backup dei dati
 
 Da dentro l'app: tab "Aggiungi" → "Esporta CSV". Tienilo come backup, specialmente
