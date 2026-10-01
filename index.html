@@ -53,7 +53,7 @@
           <option value="55">55</option>
         </select>
         <label for="inNote">Nota (opzionale)</label>
-        <input type="text" id="inNote" placeholder="es. schedina Champions">
+        <input type="text" id="inNote" placeholder="es. schedina Champions" autocomplete="off">
         <button class="btn" id="addBtn">Registra schedina</button>
       </div>
 
@@ -126,19 +126,25 @@
       <button class="btn secondary small" id="menuSyncBtn" style="width:100%;margin-bottom:8px;">🔗 Sincronizza tra dispositivi</button>
       <button class="btn danger small" id="menuDeleteBtn" style="width:100%;margin-bottom:8px;">🗑 Cancella dati locali</button>
       <button class="btn secondary small" id="menuCloseBtn" style="width:100%;">Chiudi</button>
-      <div class="hint" style="text-align:center;margin-top:12px;margin-bottom:0;">v15</div>
+      <div class="hint" style="text-align:center;margin-top:12px;margin-bottom:0;">v16</div>
     </div>
   </div>
 
   <div class="modalOverlay hidden" id="syncOverlay">
     <div class="modalBox">
       <div class="modalMsg">Inserisci una passphrase. Usando la stessa su più dispositivi vedrai sempre lo stesso storico.</div>
-      <input type="password" id="syncPassInput" placeholder="Passphrase" autocomplete="off" style="margin-bottom:12px;">
-      <div class="rowbtns">
-        <button class="btn small" id="syncSaveBtn" style="flex:1">Sincronizza</button>
-        <button class="btn secondary small" id="syncCancelBtn" style="flex:1">Annulla</button>
-      </div>
-      <button class="btn danger small hidden" id="syncDisconnectBtn" style="width:100%;margin-top:8px;">Disconnetti (solo locale)</button>
+      <!-- form a sé stante: isola questo unico campo password dal resto della pagina,
+           così il browser non propone "salva password" quando tocchi altri campi
+           (es. la nota), che senza un <form> verrebbero considerati parte dello
+           stesso "modulo di login" implicito. -->
+      <form id="syncForm" autocomplete="off" onsubmit="return false;">
+        <input type="password" id="syncPassInput" placeholder="Passphrase" autocomplete="off" style="margin-bottom:12px;">
+        <div class="rowbtns">
+          <button type="button" class="btn small" id="syncSaveBtn" style="flex:1">Sincronizza</button>
+          <button type="button" class="btn secondary small" id="syncCancelBtn" style="flex:1">Annulla</button>
+        </div>
+        <button type="button" class="btn danger small hidden" id="syncDisconnectBtn" style="width:100%;margin-top:8px;">Disconnetti (solo locale)</button>
+      </form>
       <div class="hint" id="syncStatusHint"></div>
     </div>
   </div>
