@@ -12,7 +12,7 @@ più dispositivi" più sotto. Senza configurare la sincronizzazione, l'app resta
 
 ## Pubblicare su GitHub Pages
 
-1. Crea un nuovo repository su GitHub (es. `schedine-tracker`), pubblico.
+1. Crea un nuovo repository su GitHub (es. `trackthis`), pubblico.
 2. Carica tutti i file e le cartelle di questo progetto nella root del repo:
    `index.html`, `manifest.json`, `sw.js`, `icon-192.png`, `icon-512.png`,
    `css/style.css`, `js/app.js`, `js/sync.js`, `js/register-sw.js`.
