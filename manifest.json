@@ -1,6 +1,6 @@
 {
-  "name": "Schedine Tracker",
-  "short_name": "Schedine",
+  "name": "TrackThis",
+  "short_name": "TrackThis",
   "description": "Registro giornaliero di schedine/punti con statistiche settimanali e mensili",
   "start_url": "./index.html",
   "scope": "./",
