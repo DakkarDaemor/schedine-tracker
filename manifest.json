@@ -2,7 +2,7 @@
   "name": "TrackThis",
   "short_name": "TrackThis",
   "description": "Registro giornaliero di schedine/punti con statistiche settimanali e mensili",
-  "id": "trackthis",
+  "id": "./app",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
