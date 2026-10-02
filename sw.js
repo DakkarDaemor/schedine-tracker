@@ -1,7 +1,7 @@
 // Service worker: network-first per i file dell'app (così gli aggiornamenti
 // arrivano subito, al primo caricamento online), con fallback alla cache per
 // l'uso offline. CACHE_NAME va comunque aggiornato ad ogni release.
-var CACHE_NAME = "trackthis-cache-v18";
+var CACHE_NAME = "trackthis-cache-v19";
 var ASSETS = [
   "./",
   "./index.html",
